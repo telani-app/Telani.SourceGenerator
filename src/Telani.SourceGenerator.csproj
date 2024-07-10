@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>Nullable</WarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <Platforms>x64</Platforms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+  </PropertyGroup>
+
+  <PropertyGroup>
+	<!-- nuget -->
+    <PackageId>Telani.SourceGenerator</PackageId>
+	<PackageProjectUrl>https://github.com/telani-app/telani.sourcegenerator</PackageProjectUrl>
+	  <PackageLicenseExpression>MS-PL OR Apache-2.0</PackageLicenseExpression>
+    <Authors>telani-Team</Authors>
+    <Company>gb&amp;t Gebäudebestand und Technik GmbH</Company>
+    <Product>Telani.SourceGenerator</Product>
+  </PropertyGroup>
+
+    <PropertyGroup Condition="'$(CI)' == 'true'">
+	    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+
+	<!--
+      https://github.com/dotnet/roslyn/issues/52017#issuecomment-1046216200
+      This automatically adds explicit and transient dependencies so that they are available at the time the generator is executed. 
+  -->
+  <Target Name="AddGenerationTimeReferences" AfterTargets="ResolvePackageDependenciesForBuild">
+    <ItemGroup>
+      <None Include="@(ResolvedCompileFileDefinitions)" Pack="true" PackagePath="analyzers/dotnet/cs" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
