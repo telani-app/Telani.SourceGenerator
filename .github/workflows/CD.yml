@@ -1,0 +1,53 @@
+name:  Telani.SourceGenerator Continuous Deployment
+
+on: 
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Display dotnet version
+        run: dotnet --version
+
+      - name: Build
+        run: dotnet build
+
+      - name: Run tests
+        run: dotnet test
+
+      - name: Build Release
+        run: dotnet build -c Release
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nuget-Package
+          if-no-files-found: error
+          path: |
+            ${{ github.workspace }}/src/bin/x64/Release/*.nupkg
+
+      - name: Prep packages
+        run: dotnet nuget add source --username marv51 --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/telani-app/index.json"
+
+      - name: Push package to GitHub packages 
+        run: dotnet nuget push src/bin/x64/Release/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }}  --source "github"
