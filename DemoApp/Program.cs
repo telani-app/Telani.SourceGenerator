@@ -1,0 +1,115 @@
+﻿using OpenDocumentCreator;
+using System.Diagnostics;
+using Telani.Data;
+using Telani.Data.Settings;
+
+namespace Telani.Data.Model
+{
+
+}
+
+namespace DemoApp {
+
+    // This DemoApp uses the generator as a ProjectReference that is not recommended and that is also the reason why this is a separate
+    // package at all. However a ProjectReference is still the best way to develop here.
+
+    [OpenDocumentCreator.StringValueGenerator]
+    public enum Planet
+    {
+        [StringValue("Merkur")]
+        Mercury,
+        [StringValue("Venus")]
+        Venus,
+        [StringValue("Erde")]
+        Earth,
+        [StringValue("Mars (de)")]
+        Mars,
+        [StringValue("Jupiter (de)")]
+        Jupiter,
+        [StringValue("Saturn (de)")]
+        Saturn,
+        [StringValue("Uranus (de)")]
+        Uranus,
+        [StringValue("Neptun (de)")]
+        Neptune,
+        [StringValue("This is not a planet")]
+        MaxValue
+    };
+
+
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+
+            Console.WriteLine("Hello, World!");
+
+            var buildDate = TelaniSourceGenerator.BuildDate.GetBuildDate();
+
+            Console.WriteLine($"This executable was compiled on: {buildDate:d}");
+
+            var myHome = (Planet)Random.Shared.Next((int)Planet.MaxValue);
+
+            Console.WriteLine($"Hi, I am an extra terrestrial being from {myHome}, the German name is {myHome.GetStringValue()}");
+
+            Console.WriteLine($"If a German person tells you something about {EnumToStringGenerator.EnumToString(Planet.Earth)}, they are talking about planet number: {(int)EnumExtensions.PlanetFromString("Erde") + 1}");
+
+
+            IAppSettings settings = new AppSettings
+            {
+                TestProperty = "Test"
+            };
+
+            Debug.Assert(settings.TestNumberReadOnly == 17);
+
+            AppSettings other_settings = new AppSettings
+            {
+                TestProperty = "New value"
+            };
+
+            (settings as AppSettings)!.UpdateFrom(other_settings);
+
+            Debug.Assert(settings.TestProperty == "New value");
+
+
+        }
+    }
+}
+
+namespace Telani.Data.Settings
+{
+    [Telani.Data.AppSettings]
+    public sealed partial class AppSettings : IAppSettings
+    {
+        /// <summary>
+        /// This is a settings prop. Doc-Comments should be reflected in the interface.
+        /// </summary>
+        public string? TestProperty { get; set; }
+
+        /// <summary>
+        /// This prop is readonly.
+        /// </summary>
+        [SettingsReadOnly]
+        public int TestNumberReadOnly { get; set; } = 17;
+
+        /// <summary>
+        /// This is not in the automatic interface.
+        /// </summary>
+        [SettingsIgnore]
+        public bool RandomProperty { get; set; }
+
+        /// <summary>
+        /// This property is required, because in the original use-case extra info from the JSON file was stored here.
+        /// </summary>
+        [SettingsIgnore]
+        public object? _extraStuff { get; set; }
+
+        public void UpdateFrom(AppSettings other_settings)
+        {
+            // this is auto generated:
+            Reload(other_settings);
+        }
+
+    }
+}
+

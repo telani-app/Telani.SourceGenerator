@@ -16,10 +16,16 @@
 	<!-- nuget -->
     <PackageId>Telani.SourceGenerator</PackageId>
 	<PackageProjectUrl>https://github.com/telani-app/telani.sourcegenerator</PackageProjectUrl>
-	  <PackageLicenseExpression>MS-PL OR Apache-2.0</PackageLicenseExpression>
     <Authors>telani-Team</Authors>
     <Company>gb&amp;t Gebäudebestand und Technik GmbH</Company>
     <Product>Telani.SourceGenerator</Product>
+	<PublishRepositoryUrl>true</PublishRepositoryUrl>
+	<RepositoryUrl>https://github.com/telani-app/telani.sourcegenerator</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+	<IncludeSymbols>false</IncludeSymbols>
+	<DebugType>Embedded</DebugType>
+	<EmbedUntrackedSources>true</EmbedUntrackedSources>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
     <PropertyGroup Condition="'$(CI)' == 'true'">
@@ -43,5 +49,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" PrivateAssets="all" />
+	<PackageReference Include="Nerdbank.GitVersioning" Version="3.6.139" PrivateAssets="all" />
+	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 </Project>
