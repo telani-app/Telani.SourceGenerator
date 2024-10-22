@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using Telani.Data;
 using Telani.Data.Settings;
+using Telani.SourceGenerator;
 
 namespace Telani.Data.Model
 {
@@ -36,6 +37,11 @@ namespace DemoApp {
         MaxValue
     };
 
+    [Route("PUT", "/test/{id}")]
+    public partial class MyRoute
+    {
+        public string Name => "MyRoute";
+    }
 
     public class Program
     {
@@ -71,6 +77,14 @@ namespace DemoApp {
 
             Debug.Assert(settings.TestProperty == "New value");
 
+
+            Console.WriteLine(new MyRoute().RequestRegex.Matches("/bala").Count == 0);
+            var matches = new MyRoute().RequestRegex.Matches("/test/123");
+            foreach (var m in matches.FirstOrDefault()?.Groups?.Values?.Skip(1) ?? [])
+            {
+                Console.WriteLine(m);
+            }
+            
 
         }
     }
