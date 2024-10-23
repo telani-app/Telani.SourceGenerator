@@ -16,7 +16,7 @@ public class MiniAPIRouter : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var routes = context.SyntaxProvider.ForAttributeWithMetadataName("Telani.SourceGenerator.RouteAttribute",
+        var routes = context.SyntaxProvider.ForAttributeWithMetadataName("Telani.SourceGenerator.TelaniRouteAttribute",
                     predicate: static (node, _) => IsSyntaxTargetForGenerationQuick(node),
                     transform: static (syntaxContext, _) => ((ClassDeclarationSyntax)syntaxContext.TargetNode, syntaxContext.SemanticModel))
                     .Select(static (a, _) => PrepareRoute(a.Item1, a.SemanticModel));
@@ -25,7 +25,7 @@ public class MiniAPIRouter : IIncrementalGenerator
 
         context.RegisterPostInitializationOutput(static c =>
         {
-            c.AddSource("RouterAttributes.g.cs", ReadAttributesFile());
+            c.AddSource("TelaniRouteAttributes.g.cs", ReadAttributesFile());
         });
     }
 
@@ -49,7 +49,7 @@ public class MiniAPIRouter : IIncrementalGenerator
             foreach (var att in attributesOnClass.Attributes)
             {
                 var name = (att.Name as SimpleNameSyntax)?.Identifier.ValueText;
-                if (name == "Route")
+                if (name == "TelaniRoute" || name == "TelaniRouteAttribute")
                 {
                     var args = att.ArgumentList?.Arguments.FirstOrDefault()?.Expression as LiteralExpressionSyntax;
                     if (args is not null)
@@ -107,9 +107,9 @@ public class MiniAPIRouter : IIncrementalGenerator
             extension.AppendLine($"    /// </summary>");
             extension.AppendLine($"    public partial class {input.Name}");
             extension.AppendLine("    {");
-            extension.AppendLine($"         internal string RoutePath => {input.RequestRoute};");
-            extension.AppendLine($"         internal HttpMethod Method => HttpMethod.{ToTitleCase(input.Method.Method)};");
-            extension.AppendLine($"         internal Regex RequestRegex => new Regex($\"^{input.RequestRegex.Trim('"')}/?$\", RegexOptions.IgnoreCase);");
+            extension.AppendLine($"        public override string Path => {input.RequestRoute};");
+            extension.AppendLine($"        public override HttpMethod Method => HttpMethod.{ToTitleCase(input.Method.Method)};");
+            extension.AppendLine($"        internal override Regex RequestRegex => new Regex($\"^{input.RequestRegex.Trim('"')}/?$\", RegexOptions.IgnoreCase);");
             extension.AppendLine("    }");
             extension.AppendLine("}");
         }
@@ -137,7 +137,7 @@ namespace Telani.SourceGenerator;
 /// This class implements a route for a Rest-API.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-internal sealed class RouteAttribute(string Method, string RequestRoute) : Attribute
+internal sealed class TelaniRouteAttribute(string Method, string RequestRoute) : Attribute
 {
 
 }

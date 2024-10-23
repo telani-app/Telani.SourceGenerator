@@ -1,5 +1,6 @@
 ﻿using OpenDocumentCreator;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Telani.Data;
 using Telani.Data.Settings;
 using Telani.SourceGenerator;
@@ -37,10 +38,19 @@ namespace DemoApp {
         MaxValue
     };
 
-    [Route("PUT", "/test/{id}")]
-    public partial class MyRoute
+    public abstract class Route
+    {
+        public abstract string Path { get; }
+        public abstract HttpMethod Method { get; }
+        internal abstract Regex RequestRegex { get; }
+    }
+
+    [TelaniRoute("PUT", "/test/{id}")]
+    public partial class MyRoute(string Test) : Route
     {
         public string Name => "MyRoute";
+
+        public string Testing => Test;
     }
 
     public class Program
@@ -78,14 +88,12 @@ namespace DemoApp {
             Debug.Assert(settings.TestProperty == "New value");
 
 
-            Console.WriteLine(new MyRoute().RequestRegex.Matches("/bala").Count == 0);
-            var matches = new MyRoute().RequestRegex.Matches("/test/123");
+            Console.WriteLine(new MyRoute("Bla").RequestRegex.Matches("/bala").Count == 0);
+            var matches = new MyRoute("Bla").RequestRegex.Matches("/test/123");
             foreach (var m in matches.FirstOrDefault()?.Groups?.Values?.Skip(1) ?? [])
             {
                 Console.WriteLine(m);
             }
-            
-
         }
     }
 }
