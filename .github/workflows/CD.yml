@@ -44,10 +44,10 @@ jobs:
           name: Nuget-Package
           if-no-files-found: error
           path: |
-            ${{ github.workspace }}/src/bin/x64/Release/*.nupkg
+            ${{ github.workspace }}/src/bin/Release/*.nupkg
 
       - name: Prep packages
         run: dotnet nuget add source --username marv51 --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/telani-app/index.json"
 
       - name: Push package to GitHub packages 
-        run: dotnet nuget push src/bin/x64/Release/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }}  --source "github"
+        run: dotnet nuget push src/bin/Release/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }}  --source "github"
