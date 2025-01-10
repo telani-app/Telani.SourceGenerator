@@ -5,11 +5,11 @@
     <Nullable>enable</Nullable>
     <WarningsAsErrors>Nullable</WarningsAsErrors>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
-    <Platforms>x64</Platforms>
     <ImplicitUsings>enable</ImplicitUsings>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IncludeBuildOutput>false</IncludeBuildOutput>
+	<IsRoslynComponent>true</IsRoslynComponent>
   </PropertyGroup>
 
   <PropertyGroup>
