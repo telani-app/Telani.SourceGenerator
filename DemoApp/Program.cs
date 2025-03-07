@@ -38,6 +38,12 @@ namespace DemoApp {
         MaxValue
     };
 
+    [TelaniBuildDate]
+    internal static partial class MyBuildDate
+    {
+
+    }
+
     public abstract class Route
     {
         public abstract string Path { get; }
@@ -60,10 +66,10 @@ namespace DemoApp {
 
             Console.WriteLine("Hello, World!");
 
-            var buildDate = TelaniSourceGenerator.BuildDate.GetBuildDate();
+            var buildDate = MyBuildDate.GetBuildDate();
 
             Console.WriteLine($"This executable was compiled on: {buildDate:d}");
-
+            
             var myHome = (Planet)Random.Shared.Next((int)Planet.MaxValue);
 
             Console.WriteLine($"Hi, I am an extra terrestrial being from {myHome}, the German name is {myHome.GetStringValue()}");
