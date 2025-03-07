@@ -1,142 +1,131 @@
 ﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Telani.Data;
-using Telani.Data.Settings;
 using Telani.SourceGenerator;
 
-namespace Telani.Data.Model
+namespace DemoApp; 
+
+// This DemoApp uses the generator as a ProjectReference that is not recommended and that is also the reason why this is a separate
+// package at all. However a ProjectReference is still the best way to develop here.
+
+[StringValueGenerator]
+public enum Planet
+{
+    [StringValue("Merkur")]
+    Mercury,
+    [StringValue("Venus")]
+    Venus,
+    [StringValue("Erde")]
+    Earth,
+    [StringValue("Mars (de)")]
+    Mars,
+    [StringValue("Jupiter (de)")]
+    Jupiter,
+    [StringValue("Saturn (de)")]
+    Saturn,
+    [StringValue("Uranus (de)")]
+    Uranus,
+    [StringValue("Neptun (de)")]
+    Neptune,
+    [StringValue("This is not a planet")]
+    MaxValue
+};
+
+[TelaniBuildDate]
+internal static partial class MyBuildDate
 {
 
 }
 
-namespace DemoApp {
+public abstract class Route
+{
+    public abstract string Path { get; }
+    public abstract HttpMethod Method { get; }
+    internal abstract Regex RequestRegex { get; }
+}
 
-    // This DemoApp uses the generator as a ProjectReference that is not recommended and that is also the reason why this is a separate
-    // package at all. However a ProjectReference is still the best way to develop here.
+[TelaniRoute("PUT", "/test/{id}")]
+public partial class MyRoute(string Test) : Route
+{
+    public string Name => "MyRoute";
 
-    [StringValueGenerator]
-    public enum Planet
-    {
-        [StringValue("Merkur")]
-        Mercury,
-        [StringValue("Venus")]
-        Venus,
-        [StringValue("Erde")]
-        Earth,
-        [StringValue("Mars (de)")]
-        Mars,
-        [StringValue("Jupiter (de)")]
-        Jupiter,
-        [StringValue("Saturn (de)")]
-        Saturn,
-        [StringValue("Uranus (de)")]
-        Uranus,
-        [StringValue("Neptun (de)")]
-        Neptune,
-        [StringValue("This is not a planet")]
-        MaxValue
-    };
+    public string Testing => Test;
+}
 
-    [TelaniBuildDate]
-    internal static partial class MyBuildDate
+public class Program
+{
+    public static void Main(string[] args)
     {
 
-    }
+        Console.WriteLine("Hello, World!");
 
-    public abstract class Route
-    {
-        public abstract string Path { get; }
-        public abstract HttpMethod Method { get; }
-        internal abstract Regex RequestRegex { get; }
-    }
+        var buildDate = MyBuildDate.GetBuildDate();
 
-    [TelaniRoute("PUT", "/test/{id}")]
-    public partial class MyRoute(string Test) : Route
-    {
-        public string Name => "MyRoute";
+        Console.WriteLine($"This executable was compiled on: {buildDate:d}");
+        
+        var myHome = (Planet)Random.Shared.Next((int)Planet.MaxValue);
 
-        public string Testing => Test;
-    }
+        Console.WriteLine($"Hi, I am an extra terrestrial being from {myHome}, the German name is {myHome.GetStringValue()}");
 
-    public class Program
-    {
-        public static void Main(string[] args)
+        Console.WriteLine($"If a German person tells you something about {EnumToStringGenerator.EnumToString(Planet.Earth)}, they are talking about planet number: {(int)EnumExtensions.PlanetFromString("Erde") + 1}");
+
+
+        IAppSettings settings = new AppSettings
         {
+            TestProperty = "Test"
+        };
 
-            Console.WriteLine("Hello, World!");
+        Debug.Assert(settings.TestNumberReadOnly == 17);
 
-            var buildDate = MyBuildDate.GetBuildDate();
+        AppSettings other_settings = new AppSettings
+        {
+            TestProperty = "New value"
+        };
 
-            Console.WriteLine($"This executable was compiled on: {buildDate:d}");
-            
-            var myHome = (Planet)Random.Shared.Next((int)Planet.MaxValue);
+        (settings as AppSettings)!.UpdateFrom(other_settings);
 
-            Console.WriteLine($"Hi, I am an extra terrestrial being from {myHome}, the German name is {myHome.GetStringValue()}");
-
-            Console.WriteLine($"If a German person tells you something about {EnumToStringGenerator.EnumToString(Planet.Earth)}, they are talking about planet number: {(int)EnumExtensions.PlanetFromString("Erde") + 1}");
-
-
-            IAppSettings settings = new AppSettings
-            {
-                TestProperty = "Test"
-            };
-
-            Debug.Assert(settings.TestNumberReadOnly == 17);
-
-            AppSettings other_settings = new AppSettings
-            {
-                TestProperty = "New value"
-            };
-
-            (settings as AppSettings)!.UpdateFrom(other_settings);
-
-            Debug.Assert(settings.TestProperty == "New value");
+        Debug.Assert(settings.TestProperty == "New value");
 
 
-            Console.WriteLine(new MyRoute("Bla").RequestRegex.Matches("/bala").Count == 0);
-            var matches = new MyRoute("Bla").RequestRegex.Matches("/test/123");
-            foreach (var m in matches.FirstOrDefault()?.Groups?.Values?.Skip(1) ?? [])
-            {
-                Console.WriteLine(m);
-            }
+        Console.WriteLine(new MyRoute("Bla").RequestRegex.Matches("/bala").Count == 0);
+        var matches = new MyRoute("Bla").RequestRegex.Matches("/test/123");
+        foreach (var m in matches.FirstOrDefault()?.Groups?.Values?.Skip(1) ?? [])
+        {
+            Console.WriteLine(m);
         }
     }
 }
 
-namespace Telani.Data.Settings
+[AppSettings]
+public sealed partial class AppSettings : IAppSettings
 {
-    [Telani.Data.AppSettings]
-    public sealed partial class AppSettings : IAppSettings
+    /// <summary>
+    /// This is a settings prop. Doc-Comments should be reflected in the interface.
+    /// </summary>
+    public string? TestProperty { get; set; }
+
+    /// <summary>
+    /// This prop is readonly.
+    /// </summary>
+    [SettingsReadOnly]
+    public int TestNumberReadOnly { get; set; } = 17;
+
+    /// <summary>
+    /// This is not in the automatic interface.
+    /// </summary>
+    [SettingsIgnore]
+    public bool RandomProperty { get; set; }
+
+    /// <summary>
+    /// This property is required, because in the original use-case extra info from the JSON file was stored here.
+    /// </summary>
+    [SettingsIgnore]
+    public object? _extraStuff { get; set; }
+
+    public void UpdateFrom(AppSettings other_settings)
     {
-        /// <summary>
-        /// This is a settings prop. Doc-Comments should be reflected in the interface.
-        /// </summary>
-        public string? TestProperty { get; set; }
-
-        /// <summary>
-        /// This prop is readonly.
-        /// </summary>
-        [SettingsReadOnly]
-        public int TestNumberReadOnly { get; set; } = 17;
-
-        /// <summary>
-        /// This is not in the automatic interface.
-        /// </summary>
-        [SettingsIgnore]
-        public bool RandomProperty { get; set; }
-
-        /// <summary>
-        /// This property is required, because in the original use-case extra info from the JSON file was stored here.
-        /// </summary>
-        [SettingsIgnore]
-        public object? _extraStuff { get; set; }
-
-        public void UpdateFrom(AppSettings other_settings)
-        {
-            // this is auto generated:
-            Reload(other_settings);
-        }
-
+        // this is auto generated:
+        Reload(other_settings);
     }
+
 }
 
