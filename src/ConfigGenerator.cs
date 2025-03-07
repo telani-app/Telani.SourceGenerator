@@ -17,7 +17,7 @@ namespace Telani.SourceGenerator;
 [Generator(LanguageNames.CSharp)]
 public class ConfigGenerator : IIncrementalGenerator
 {
-    private readonly record struct SettingsClassModel(EquatableArray<PropertyModel> Settings);
+    private readonly record struct SettingsClassModel(EquatableArray<PropertyModel> Settings, string NamespaceName);
 
     private readonly record struct PropertyModel(string Type, string Name, bool ReadonlyAttr, string? Doccomment);
 
@@ -43,7 +43,7 @@ public class ConfigGenerator : IIncrementalGenerator
         var properties = settingsClasses.SelectMany(static a => a.Settings);
 
         var sourceBuilder = new StringBuilder();
-        PrintHead(sourceBuilder, "Telani.Data", printConfigUsings: true);
+        PrintHead(sourceBuilder, settingsClasses.First().NamespaceName);
 
         sourceBuilder.Append(@"
 public partial interface IAppSettings
@@ -55,7 +55,7 @@ public partial interface IAppSettings
 
 
         var sourceBuilder2 = new StringBuilder();
-        PrintHead(sourceBuilder2, "Telani.Data.Settings", printConfigUsings: true);
+        PrintHead(sourceBuilder2, settingsClasses.First().NamespaceName);
 
         sourceBuilder2.Append(@"
 public sealed partial class AppSettings
@@ -114,7 +114,7 @@ public sealed partial class AppSettings
         return null;
     }
 
-    private static void PrintHead(StringBuilder sourceBuilder, string theNamespace, bool printConfigUsings)
+    private static void PrintHead(StringBuilder sourceBuilder, string theNamespace)
     {
         sourceBuilder.Append($@"using System;
 using System.Collections.Generic;
@@ -122,8 +122,6 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Telani.Data;
-{(printConfigUsings ? "using Telani.Data.Model;" : "")}
 
 #nullable enable
                 
@@ -153,9 +151,9 @@ namespace {theNamespace};
             Debugger.Break();
         }*/
         var appSettingsClass = context.SyntaxProvider.ForAttributeWithMetadataName(
-            "Telani.Data.AppSettingsAttribute",
+            "Telani.SourceGenerator.AppSettingsAttribute",
             predicate: static (node, _) => node is ClassDeclarationSyntax,
-            transform: static (syntaxContext, _) => ExtractInfo((ClassDeclarationSyntax)syntaxContext.TargetNode));
+            transform: static (syntaxContext, _) => ExtractInfo((ClassDeclarationSyntax)syntaxContext.TargetNode, syntaxContext.TargetSymbol.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted))));
 
 
         context.RegisterSourceOutput(appSettingsClass.Collect(), ProduceSource);
@@ -166,12 +164,13 @@ namespace {theNamespace};
         });
     }
 
-    private static SettingsClassModel ExtractInfo(ClassDeclarationSyntax s)
+    private static SettingsClassModel ExtractInfo(ClassDeclarationSyntax s, string namespaceName)
     {
         if (s is null)
         {
-            return new(new EquatableArray<PropertyModel>());
+            return new(new EquatableArray<PropertyModel>(), "Telani.SourceGenerator");
         }
+
         var tempList = new List<PropertyModel>();
 
         foreach (var member in s.Members)
@@ -185,13 +184,13 @@ namespace {theNamespace};
                 }
             }
         }
-        return new(tempList.ToImmutableArray());
+        return new(tempList.ToImmutableArray(), namespaceName);
     }
 
     private static SourceText WriteAttributesFile()
     {
         var sourceBuilder3 = new StringBuilder();
-        PrintHead(sourceBuilder3, "Telani.Data", printConfigUsings: false);
+        PrintHead(sourceBuilder3, "Telani.SourceGenerator");
 
         sourceBuilder3.Append(@"
     [AttributeUsage(AttributeTargets.Property)]
