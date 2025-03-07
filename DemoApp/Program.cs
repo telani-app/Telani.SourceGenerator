@@ -1,5 +1,4 @@
-﻿using OpenDocumentCreator;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Telani.Data;
 using Telani.Data.Settings;
@@ -15,7 +14,7 @@ namespace DemoApp {
     // This DemoApp uses the generator as a ProjectReference that is not recommended and that is also the reason why this is a separate
     // package at all. However a ProjectReference is still the best way to develop here.
 
-    [OpenDocumentCreator.StringValueGenerator]
+    [StringValueGenerator]
     public enum Planet
     {
         [StringValue("Merkur")]

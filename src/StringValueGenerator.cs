@@ -24,7 +24,7 @@ public class StringValueGenerator : IIncrementalGenerator
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var enums = context.SyntaxProvider.ForAttributeWithMetadataName("OpenDocumentCreator.StringValueGeneratorAttribute",
+        var enums = context.SyntaxProvider.ForAttributeWithMetadataName("Telani.SourceGenerator.StringValueGeneratorAttribute",
             predicate: static (node, _) => IsSyntaxTargetForGenerationQuick(node),
             transform: static (syntaxContext, _) => ((EnumDeclarationSyntax)syntaxContext.TargetNode, syntaxContext.SemanticModel))
             .Select(static (a, _) => PrepareEnum(a.Item1, a.SemanticModel));
@@ -74,43 +74,42 @@ public class StringValueGenerator : IIncrementalGenerator
         }
         var extension = new StringBuilder();
         extension.AppendLine("#nullable enable");
-        foreach (var en in inputs.Select(static a => a.EnumNamespace).Distinct())
-        {
-            extension.AppendLine($"using {en};");
-        }
-        extension.AppendLine("namespace OpenDocumentCreator;");
-        extension.AppendLine($"/// <summary>");
-        extension.AppendLine($"/// </summary>");
-        extension.AppendLine($"internal static class EnumExtensions");
-        extension.AppendLine("{");
 
         foreach (var e in inputs)
         {
+            extension.AppendLine($"namespace {e.EnumNamespace}");
+            extension.AppendLine("{");
             extension.AppendLine($"    /// <summary>");
             extension.AppendLine($"    /// </summary>");
-            extension.AppendLine($"    public static string GetStringValue(this {e.Name} @this) => @this switch");
+            extension.AppendLine($"    internal static partial class EnumExtensions");
             extension.AppendLine("    {");
-            foreach (var att in e.Values)
-            {
-                extension.AppendLine($"        {e.Name}.{att.Key} => {att.Value},");
-            }
-            extension.AppendLine($"        _ => \"\"");
-            extension.AppendLine("    };");
 
-            extension.AppendLine($"    /// <summary>");
-            extension.AppendLine($"    /// </summary>");
-            extension.AppendLine($"    public static {e.Name} {e.Name}FromString(string? value) => value switch");
-            extension.AppendLine("    {");
+
+            extension.AppendLine($"        /// <summary>");
+            extension.AppendLine($"        /// </summary>");
+            extension.AppendLine($"        public static string GetStringValue(this {e.Name} @this) => @this switch");
+            extension.AppendLine("        {");
             foreach (var att in e.Values)
             {
-                extension.AppendLine($"        {att.Value} => {e.Name}.{att.Key},");
+                extension.AppendLine($"            {e.Name}.{att.Key} => {att.Value},");
             }
-            extension.AppendLine($"        _ => {e.Name}.{e.Values.First().Key}");
-            extension.AppendLine("    };");
+            extension.AppendLine($"            _ => \"\"");
+            extension.AppendLine("        };");
+
+            extension.AppendLine($"        /// <summary>");
+            extension.AppendLine($"        /// </summary>");
+            extension.AppendLine($"        public static {e.Name} {e.Name}FromString(string? value) => value switch");
+            extension.AppendLine("        {");
+            foreach (var att in e.Values)
+            {
+                extension.AppendLine($"            {att.Value} => {e.Name}.{att.Key},");
+            }
+            extension.AppendLine($"            _ => {e.Name}.{e.Values.First().Key}");
+            extension.AppendLine("        };");
+
+            extension.AppendLine("    }"); // class end
+            extension.AppendLine("}"); // namespace end
         }
-
-
-        extension.AppendLine("}");
         
         var str = extension.ToString();
 
@@ -153,33 +152,32 @@ public class StringValueGenerator : IIncrementalGenerator
     private static string EnumToString(IEnumerable<EnumEntry> enums)
     {
         var extension = new StringBuilder();
-        foreach (var en in enums.Select(static a => a.EnumNamespace).Distinct())
-        {
-            extension.AppendLine($"using {en};");
-        }        
-        extension.AppendLine("namespace OpenDocumentCreator;");
         extension.AppendLine("#nullable enable");
-        extension.AppendLine($"/// <summary>");
-        extension.AppendLine($"/// </summary>");
-        extension.AppendLine($"internal static class EnumToStringGenerator");
-        extension.AppendLine("{");
-
-        extension.AppendLine($"    /// <summary>");
-        extension.AppendLine($"    /// </summary>");
-        extension.AppendLine($"    public static string EnumToString(Enum en) => en switch ");
-        extension.AppendLine("    {");
-
-        foreach (var en in enums)
+        foreach (var enum_namespace in enums.GroupBy(a => a.EnumNamespace))
         {
-            extension.AppendLine($"        {en.Name} {en.Name} => {en.Name}.GetStringValue(),");
+            extension.AppendLine($"namespace {enum_namespace.Key} {{");
+
+            extension.AppendLine($"    /// <summary>");
+            extension.AppendLine($"    /// </summary>");
+            extension.AppendLine($"    internal static partial class EnumToStringGenerator");
+            extension.AppendLine("    {");
+
+            extension.AppendLine($"        /// <summary>");
+            extension.AppendLine($"        /// </summary>");
+            extension.AppendLine($"        public static string EnumToString(Enum en) => en switch ");
+            extension.AppendLine("        {");
+
+            foreach (var en in enum_namespace)
+            {
+                extension.AppendLine($"            {en.Name} {en.Name} => {en.Name}.GetStringValue(),");
+            }
+
+            extension.AppendLine("            _ => \"\"");
+
+            extension.AppendLine("        };");
+            extension.AppendLine("    }");
+            extension.AppendLine("}");
         }
-
-        extension.AppendLine("        _ => \"\"");
-
-        extension.AppendLine("    };");
-        extension.AppendLine("}");
-
-       
 
         return extension.ToString();
     }
@@ -191,7 +189,7 @@ using System.Globalization;
 
 #nullable enable
 
-namespace OpenDocumentCreator;
+namespace Telani.SourceGenerator;
 /// <summary>
 /// This enum should be quickly convertible into a string.
 /// </summary>
