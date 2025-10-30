@@ -160,6 +160,7 @@ namespace {theNamespace};
 
         context.RegisterPostInitializationOutput(static c =>
         {
+            c.AddEmbeddedAttributeDefinition();
             c.AddSource("TelaniSourceGeneratorAttributes.g.cs", WriteAttributesFile());
         });
     }
@@ -193,16 +194,19 @@ namespace {theNamespace};
         PrintHead(sourceBuilder3, "Telani.SourceGenerator");
 
         sourceBuilder3.Append(@"
+    [global::Microsoft.CodeAnalysis.EmbeddedAttribute]
     [AttributeUsage(AttributeTargets.Property)]
     internal sealed class SettingsIgnoreAttribute : Attribute{}");
 
         sourceBuilder3.Append(@"
 
+    [global::Microsoft.CodeAnalysis.EmbeddedAttribute]
     [AttributeUsage(AttributeTargets.Property)]
     internal sealed class SettingsReadOnlyAttribute : Attribute{}");
 
         sourceBuilder3.Append(@"
 
+    [global::Microsoft.CodeAnalysis.EmbeddedAttribute]
     [AttributeUsage(AttributeTargets.Class)]
     internal sealed class AppSettingsAttribute : Attribute{}");
 

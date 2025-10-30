@@ -53,6 +53,7 @@ namespace " + entry.ClassNamespace + @"
 
         context.RegisterPostInitializationOutput(static c =>
         {
+            c.AddEmbeddedAttributeDefinition();
             c.AddSource("TelaniBuildDateAttribute.g.cs", ReadAttributesFile());
         });
     }
@@ -83,6 +84,7 @@ namespace Telani.SourceGenerator;
 /// <summary>
 /// This attribute generates a build date string.
 /// </summary>
+[global::Microsoft.CodeAnalysis.EmbeddedAttribute]
 [AttributeUsage(AttributeTargets.Class)]
 internal sealed class TelaniBuildDateAttribute() : Attribute
 {
