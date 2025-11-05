@@ -30,6 +30,8 @@ public enum Planet
     MaxValue
 };
 
+// All visibility levels and sealed, abstract and static are supported.
+// The GetBuildDate() method is always internal static.
 [TelaniBuildDate]
 internal static partial class MyBuildDate
 {
