@@ -45,6 +45,10 @@ public abstract class Route
     internal abstract Regex RequestRegex { get; }
 }
 
+/// <summary>
+/// This is my fun route.
+/// </summary>
+/// <param name="Test"></param>
 [TelaniRoute("PUT", "/test/{id}")]
 public partial class MyRoute(string Test) : Route
 {

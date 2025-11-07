@@ -26,6 +26,7 @@
 	<DebugType>Embedded</DebugType>
 	<EmbedUntrackedSources>true</EmbedUntrackedSources>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
     <PropertyGroup Condition="'$(CI)' == 'true'">
