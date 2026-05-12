@@ -25,6 +25,7 @@ public class MiniAPIRouter : IIncrementalGenerator
 
         context.RegisterPostInitializationOutput(static c =>
         {
+            c.AddEmbeddedAttributeDefinition();
             c.AddSource("TelaniRouteAttributes.g.cs", ReadAttributesFile());
         });
     }
@@ -156,6 +157,7 @@ namespace Telani.SourceGenerator;
 /// </summary>
 /// <param name=""Method"">The http verb that this route accepts, for example GET, POST etc.</param>
 /// <param name=""RequestRoute"">The route pattern that this route matches, can contain placeholders. An example would be: /test/{id}</param>
+[global::Microsoft.CodeAnalysis.EmbeddedAttribute]
 [AttributeUsage(AttributeTargets.Class)]
 internal sealed class TelaniRouteAttribute(string Method, string RequestRoute) : Attribute
 {

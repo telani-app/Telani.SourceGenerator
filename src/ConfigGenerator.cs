@@ -162,6 +162,8 @@ namespace {theNamespace};");
 
         context.RegisterPostInitializationOutput(static c =>
         {
+            c.AddEmbeddedAttributeDefinition();
+
             var attribute = Helpers.ReadParameterlessAttributesFile("AppSettingsAttribute", "Class for which the interface should be generated.");
             c.AddSource("TelaniAppSettingsAttribute.g.cs", attribute.ToSourceText());
 

@@ -109,6 +109,7 @@ public class DateSourceGenerator : IIncrementalGenerator
 
         context.RegisterPostInitializationOutput(static c =>
         {
+            c.AddEmbeddedAttributeDefinition();
             var attribute = Helpers.ReadParameterlessAttributesFile("TelaniBuildDateAttribute", "This attribute generates a build date string.");
             c.AddSource("TelaniBuildDateAttribute.g.cs", attribute.ToSourceText());
         });
@@ -123,6 +124,5 @@ public class DateSourceGenerator : IIncrementalGenerator
         }
         return true;
     }
-
 
 }

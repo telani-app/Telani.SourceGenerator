@@ -33,6 +33,7 @@ public class StringValueGenerator : IIncrementalGenerator
 
         context.RegisterPostInitializationOutput(static c =>
         {
+            c.AddEmbeddedAttributeDefinition();
             c.AddSource("Attributes.g.cs", ReadAttributesFile());
 
             c.AddSource("StringValueGeneratorAttribute.g.cs", 
@@ -200,6 +201,7 @@ namespace Telani.SourceGenerator;
 /// <summary>
 /// The string value that this enum value represents.
 /// </summary>
+[global::Microsoft.CodeAnalysis.EmbeddedAttribute]
 [AttributeUsage(AttributeTargets.Field)]
 internal sealed class StringValueAttribute : Attribute
 {

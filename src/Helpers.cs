@@ -19,6 +19,7 @@ namespace Telani.SourceGenerator;
 /// <summary>
 /// " + description + @"
 /// </summary>
+[global::Microsoft.CodeAnalysis.EmbeddedAttribute]
 [AttributeUsage(AttributeTargets." + attributeTarget.ToString() + @")]
 internal sealed class " + attributeName + @"() : Attribute
 {
