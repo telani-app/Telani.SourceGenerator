@@ -42,45 +42,40 @@ public class ConfigGenerator : IIncrementalGenerator
 
         var properties = settingsClasses.SelectMany(static a => a.Settings);
 
-        var sourceBuilder = new StringBuilder();
+        var sourceBuilder = new SourceWriter();
         PrintHead(sourceBuilder, settingsClasses.First().NamespaceName);
 
-        sourceBuilder.Append(@"
-public partial interface IAppSettings
-{
-");
+        sourceBuilder.WriteLine("public partial interface IAppSettings");
+        sourceBuilder.WriteStartBlock();
+
         PrintProperties(sourceBuilder, properties);
-        sourceBuilder.Append(@"
-}");
+        
+        sourceBuilder.WriteEndBlock();
 
 
-        var sourceBuilder2 = new StringBuilder();
+        var sourceBuilder2 = new SourceWriter();
         PrintHead(sourceBuilder2, settingsClasses.First().NamespaceName);
 
-        sourceBuilder2.Append(@"
-public sealed partial class AppSettings
-{");
+        sourceBuilder2.WriteLine("public sealed partial class AppSettings");
+        sourceBuilder2.WriteStartBlock();
 
-        sourceBuilder2.Append(@"
-    private void Reload(AppSettings store)
-    {
-");
+        sourceBuilder2.WriteLine("private void Reload(AppSettings store)");
+        sourceBuilder2.WriteStartBlock();
 
         foreach (var (_, name, readOnlyAttr, _) in properties)
         {
             if (!readOnlyAttr)
             {
-                sourceBuilder2.AppendLine(string.Format(CultureInfo.InvariantCulture, "        {0} = store.{0};", name));
+                sourceBuilder2.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0} = store.{0};", name));
             }
         }
 
-        sourceBuilder2.Append(@"        _extraStuff = store._extraStuff;
-    }
-}");
-        productionContext.AddSource("TelaniSourceGeneratorAppSettingsIncremental.g.cs",
-            SourceText.From(sourceBuilder2.ToString(), Encoding.UTF8));
-        productionContext.AddSource("TelaniSourceGeneratorIAppSettingsIncremental.g.cs",
-            SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
+        sourceBuilder2.WriteLine("_extraStuff = store._extraStuff;");
+        sourceBuilder2.WriteEndBlock();
+        sourceBuilder2.WriteEndBlock();
+
+        productionContext.AddSource("TelaniSourceGeneratorAppSettings.g.cs", sourceBuilder2.ToSourceText());
+        productionContext.AddSource("TelaniSourceGeneratorIAppSettings.g.cs", sourceBuilder.ToSourceText());
     }
 
     private static PropertyModel? ParseProperty(PropertyDeclarationSyntax dec)
@@ -114,9 +109,9 @@ public sealed partial class AppSettings
         return null;
     }
 
-    private static void PrintHead(StringBuilder sourceBuilder, string theNamespace)
+    private static void PrintHead(SourceWriter sourceBuilder, string theNamespace)
     {
-        sourceBuilder.Append($@"using System;
+        sourceBuilder.WriteLine($@"using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -125,20 +120,27 @@ using System.Threading.Tasks;
 
 #nullable enable
                 
-namespace {theNamespace};
-                ");
+namespace {theNamespace};");
     }
 
-    private static void PrintProperties(StringBuilder sourceBuilder, IEnumerable<PropertyModel> properties)
+    private static void PrintProperties(SourceWriter sourceBuilder, IEnumerable<PropertyModel> properties)
     {
         foreach (var (type, name, readonlyAttr, doccomment) in properties)
         {
             var isreadonly = readonlyAttr ? "" : "set; ";
-            if (!string.IsNullOrEmpty(doccomment))
+            if (!string.IsNullOrEmpty(doccomment) && doccomment is not null)
             {
-                sourceBuilder.Append("    " + doccomment);
+                // The doccomment has multiple lines, which is not an issue, but the indentation might not be correct.
+                // So we split it into lines, trim the whitespace for each line and let SourceWriter handle the indentation.
+                Array.ForEach(doccomment.Split('\n'), line => {
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        sourceBuilder.WriteLine(line.Trim());
+                    }
+                });
             }
-            sourceBuilder.AppendLine(string.Format(CultureInfo.InvariantCulture, "    public {0} {1} {{ get; {2}}}", type, name, isreadonly));
+            sourceBuilder.WriteLine(string.Format(CultureInfo.InvariantCulture, "public {0} {1} {{ get; {2}}}", type, name, isreadonly));
+            sourceBuilder.WriteLine();
         }
     }
 
@@ -161,7 +163,15 @@ namespace {theNamespace};
         context.RegisterPostInitializationOutput(static c =>
         {
             c.AddEmbeddedAttributeDefinition();
-            c.AddSource("TelaniSourceGeneratorAttributes.g.cs", WriteAttributesFile());
+
+            var attribute = Helpers.ReadParameterlessAttributesFile("AppSettingsAttribute", "Class for which the interface should be generated.");
+            c.AddSource("TelaniAppSettingsAttribute.g.cs", attribute.ToSourceText());
+
+            var attributeIgnore = Helpers.ReadParameterlessAttributesFile("SettingsIgnoreAttribute", "A property with this attribute will not be added to the generated interface.", AttributeTargets.Property);
+            c.AddSource("TelaniSettingsIgnoreAttribute.g.cs", attributeIgnore.ToSourceText());
+
+            var attributeReadOnly = Helpers.ReadParameterlessAttributesFile("SettingsReadOnlyAttribute", "A property with this attribute will be added readonly (only a getter) to the generated interface.", AttributeTargets.Property);
+            c.AddSource("TelaniSettingsReadOnlyAttribute.g.cs", attributeReadOnly.ToSourceText());
         });
     }
 
@@ -186,30 +196,5 @@ namespace {theNamespace};
             }
         }
         return new(tempList.ToImmutableArray(), namespaceName);
-    }
-
-    private static SourceText WriteAttributesFile()
-    {
-        var sourceBuilder3 = new StringBuilder();
-        PrintHead(sourceBuilder3, "Telani.SourceGenerator");
-
-        sourceBuilder3.Append(@"
-    [global::Microsoft.CodeAnalysis.EmbeddedAttribute]
-    [AttributeUsage(AttributeTargets.Property)]
-    internal sealed class SettingsIgnoreAttribute : Attribute{}");
-
-        sourceBuilder3.Append(@"
-
-    [global::Microsoft.CodeAnalysis.EmbeddedAttribute]
-    [AttributeUsage(AttributeTargets.Property)]
-    internal sealed class SettingsReadOnlyAttribute : Attribute{}");
-
-        sourceBuilder3.Append(@"
-
-    [global::Microsoft.CodeAnalysis.EmbeddedAttribute]
-    [AttributeUsage(AttributeTargets.Class)]
-    internal sealed class AppSettingsAttribute : Attribute{}");
-
-        return SourceText.From(sourceBuilder3.ToString(), Encoding.UTF8);
     }
 }

@@ -35,6 +35,9 @@ public class StringValueGenerator : IIncrementalGenerator
         {
             c.AddEmbeddedAttributeDefinition();
             c.AddSource("Attributes.g.cs", ReadAttributesFile());
+
+            c.AddSource("StringValueGeneratorAttribute.g.cs", 
+                Helpers.ReadParameterlessAttributesFile("StringValueGeneratorAttribute", "This enum should be quickly convertible into a string.", AttributeTargets.Enum).ToSourceText());
         });
     }
 
@@ -73,50 +76,53 @@ public class StringValueGenerator : IIncrementalGenerator
         {
             return;
         }
-        var extension = new StringBuilder();
-        extension.AppendLine("#nullable enable");
+
+        productionContext.AddSource($"EnumExtensions.g.cs", CreateEnumExtensions(inputs).ToSourceText());
+        productionContext.AddSource($"EnumToString.g.cs", EnumToString(inputs).ToSourceText());
+    }
+
+    private static SourceWriter CreateEnumExtensions(ImmutableArray<EnumEntry> inputs)
+    {
+        var extension = new SourceWriter();
+        extension.WriteLine("#nullable enable");
+        extension.WriteLine();
 
         foreach (var e in inputs)
         {
-            extension.AppendLine($"namespace {e.EnumNamespace}");
-            extension.AppendLine("{");
-            extension.AppendLine($"    /// <summary>");
-            extension.AppendLine($"    /// </summary>");
-            extension.AppendLine($"    internal static partial class EnumExtensions");
-            extension.AppendLine("    {");
+            extension.WriteLine($"namespace {e.EnumNamespace};");
+            extension.WriteLine();
+            extension.WriteLine($"/// <summary>");
+            extension.WriteLine($"/// </summary>");
+            extension.WriteLine($"internal static partial class EnumExtensions");
+            extension.WriteStartBlock();
 
-
-            extension.AppendLine($"        /// <summary>");
-            extension.AppendLine($"        /// </summary>");
-            extension.AppendLine($"        public static string GetStringValue(this {e.Name} @this) => @this switch");
-            extension.AppendLine("        {");
+            extension.WriteLine($"/// <summary>");
+            extension.WriteLine($"/// </summary>");
+            extension.WriteLine($"public static string GetStringValue(this {e.Name} @this) => @this switch");
+            extension.WriteStartBlock();
             foreach (var att in e.Values)
             {
-                extension.AppendLine($"            {e.Name}.{att.Key} => {att.Value},");
+                extension.WriteLine($"{e.Name}.{att.Key} => {att.Value},");
             }
-            extension.AppendLine($"            _ => \"\"");
-            extension.AppendLine("        };");
+            extension.WriteLine($"_ => \"\"");
+            extension.WriteEndBlock(addSemicolon: true);
 
-            extension.AppendLine($"        /// <summary>");
-            extension.AppendLine($"        /// </summary>");
-            extension.AppendLine($"        public static {e.Name} {e.Name}FromString(string? value) => value switch");
-            extension.AppendLine("        {");
+            extension.WriteLine();
+            extension.WriteLine($"/// <summary>");
+            extension.WriteLine($"/// </summary>");
+            extension.WriteLine($"public static {e.Name} {e.Name}FromString(string? value) => value switch");
+            extension.WriteStartBlock();
             foreach (var att in e.Values)
             {
-                extension.AppendLine($"            {att.Value} => {e.Name}.{att.Key},");
+                extension.WriteLine($"{att.Value} => {e.Name}.{att.Key},");
             }
-            extension.AppendLine($"            _ => {e.Name}.{e.Values.First().Key}");
-            extension.AppendLine("        };");
+            extension.WriteLine($"_ => {e.Name}.{e.Values.First().Key}");
+            extension.WriteEndBlock(addSemicolon: true);
 
-            extension.AppendLine("    }"); // class end
-            extension.AppendLine("}"); // namespace end
+            extension.WriteEndBlock(); // class end
         }
-        
-        var str = extension.ToString();
 
-        productionContext.AddSource($"EnumToString.g.cs", EnumToString(inputs));
-
-        productionContext.AddSource($"EnumExtensions.g.cs", str);
+        return extension;
     }
 
     private static EnumEntry PrepareEnum(EnumDeclarationSyntax i, SemanticModel semModel)
@@ -150,37 +156,37 @@ public class StringValueGenerator : IIncrementalGenerator
         return new EnumEntry(enumName, values.ToImmutableDictionary(), enumNamespace);
     }
 
-    private static string EnumToString(IEnumerable<EnumEntry> enums)
+    private static SourceWriter EnumToString(IEnumerable<EnumEntry> enums)
     {
-        var extension = new StringBuilder();
-        extension.AppendLine("#nullable enable");
+        var extension = new SourceWriter();
+        extension.WriteLine("#nullable enable");
+        
         foreach (var enum_namespace in enums.GroupBy(a => a.EnumNamespace))
         {
-            extension.AppendLine($"namespace {enum_namespace.Key} {{");
+            extension.WriteLine($"namespace {enum_namespace.Key}");
+            extension.WriteStartBlock();
+            extension.WriteLine($"/// <summary>");
+            extension.WriteLine($"/// </summary>");
+            extension.WriteLine($"internal static partial class EnumToStringGenerator");
+            extension.WriteStartBlock();
 
-            extension.AppendLine($"    /// <summary>");
-            extension.AppendLine($"    /// </summary>");
-            extension.AppendLine($"    internal static partial class EnumToStringGenerator");
-            extension.AppendLine("    {");
-
-            extension.AppendLine($"        /// <summary>");
-            extension.AppendLine($"        /// </summary>");
-            extension.AppendLine($"        public static string EnumToString(Enum en) => en switch ");
-            extension.AppendLine("        {");
+            extension.WriteLine($"/// <summary>");
+            extension.WriteLine($"/// </summary>");
+            extension.WriteLine($"public static string EnumToString(Enum en) => en switch ");
+            extension.WriteStartBlock();
 
             foreach (var en in enum_namespace)
             {
-                extension.AppendLine($"            {en.Name} {en.Name} => {en.Name}.GetStringValue(),");
+                extension.WriteLine($"{en.Name} {en.Name} => {en.Name}.GetStringValue(),");
             }
 
-            extension.AppendLine("            _ => \"\"");
+            extension.WriteLine("_ => \"\"");
 
-            extension.AppendLine("        };");
-            extension.AppendLine("    }");
-            extension.AppendLine("}");
+            extension.WriteEndBlock(addSemicolon: true);
+            extension.WriteEndBlock();
+            extension.WriteEndBlock();
         }
-
-        return extension.ToString();
+        return extension;
     }
 
     private static string ReadAttributesFile()
@@ -191,15 +197,6 @@ using System.Globalization;
 #nullable enable
 
 namespace Telani.SourceGenerator;
-/// <summary>
-/// This enum should be quickly convertible into a string.
-/// </summary>
-[global::Microsoft.CodeAnalysis.EmbeddedAttribute]
-[AttributeUsage(AttributeTargets.Enum)]
-internal sealed class StringValueGeneratorAttribute : Attribute
-{
-
-}
 
 /// <summary>
 /// The string value that this enum value represents.
@@ -217,12 +214,12 @@ internal sealed class StringValueAttribute : Attribute
     /// </summary>
     public string Value { get; private set; }
 }
-
 ";
     }
 
     private static bool IsSyntaxTargetForGenerationQuick(SyntaxNode node)
     {
+        // This should not be necessary, because the attribute already has a usage restriction.
         if (node is not EnumDeclarationSyntax)
         {
             return false;
