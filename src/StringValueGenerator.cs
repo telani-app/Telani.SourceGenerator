@@ -89,8 +89,8 @@ public class StringValueGenerator : IIncrementalGenerator
 
         foreach (var e in inputs)
         {
-            extension.WriteLine($"namespace {e.EnumNamespace};");
-            extension.WriteLine();
+            extension.WriteLine($"namespace {e.EnumNamespace}");
+            extension.WriteStartBlock();
             extension.WriteLine($"/// <summary>");
             extension.WriteLine($"/// </summary>");
             extension.WriteLine($"internal static partial class EnumExtensions");
@@ -120,6 +120,7 @@ public class StringValueGenerator : IIncrementalGenerator
             extension.WriteEndBlock(addSemicolon: true);
 
             extension.WriteEndBlock(); // class end
+            extension.WriteEndBlock(); // end namespace
         }
 
         return extension;

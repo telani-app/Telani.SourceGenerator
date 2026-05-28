@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DemoApp/DemoApp.csproj" />
+  <Project Path="src/Telani.SourceGenerator.csproj" />
+</Solution>
