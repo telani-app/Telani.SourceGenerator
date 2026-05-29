@@ -48,7 +48,7 @@ public class DateSourceGenerator : IIncrementalGenerator
         sw.WriteLine();
         sw.WriteLine("namespace " + entry.ClassNamespace + @";");
         sw.WriteLine();
-        sw.WriteLine(GenerateAccessibilityString(entry.Accessibility) + (entry.IsAbstract ? " abstract" : "") + (entry.IsStatic ? " static" : "") + " partial" + (entry.IsSealed ? " sealed" : "") + " class " + entry.ClassName);
+        sw.WriteLine(GenerateAccessibilityString(entry.Accessibility) + (entry.IsStatic ? " static" : "") + (entry.IsAbstract ? " abstract" : "") + (entry.IsSealed ? " sealed" : "") + " partial" + " class " + entry.ClassName);
         sw.WriteStartBlock();
         return sw;
     }
