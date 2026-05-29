@@ -32,8 +32,16 @@ public enum Planet
 
 // All visibility levels and sealed, abstract and static are supported.
 // The GetBuildDate() method is always internal static.
+/*[TelaniBuildDate]
+internal sealed partial class MyBuildDate
+{
+
+}*/
+
+// All visibility levels and sealed, abstract and static are supported.
+// The GetBuildDate() method is always internal static.
 [TelaniBuildDate]
-internal static partial class MyBuildDate
+internal sealed partial class MyBuildDateStatic
 {
 
 }
@@ -64,7 +72,9 @@ public class Program
 
         Console.WriteLine("Hello, World!");
 
-        var buildDate = MyBuildDate.GetBuildDate();
+        var buildDate = MyBuildDateStatic.GetBuildDate();
+
+        // Debug.Assert(new MyBuildDate.GetBuildDate() > buildDate);
 
         Console.WriteLine($"This executable was compiled on: {buildDate:d}");
         
