@@ -9,6 +9,9 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- Analyzer package: ships only analyzers/, never runtime assets. Marks the package so
+         consumers get PrivateAssets="all" implicitly and no future dependency can leak. -->
+    <DevelopmentDependency>true</DevelopmentDependency>
 	<IsRoslynComponent>true</IsRoslynComponent>
   </PropertyGroup>
 
@@ -48,7 +51,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
+    <!-- netstandard2.0 has no in-box System.HashCode, so the generator needs this at compile
+         time. PrivateAssets keeps it out of the nuspec dependencies: without it the package
+         flows into every consuming app's output, and a NativeAOT app cannot execute the IL.
+         The DLL still reaches the generator at run time via AddGenerationTimeReferences above,
+         which packs it into analyzers/dotnet/cs. -->
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
 	<PackageReference Include="Nerdbank.GitVersioning" Version="3.8.118" PrivateAssets="all" />
 	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
