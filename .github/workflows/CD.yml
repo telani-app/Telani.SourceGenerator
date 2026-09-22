@@ -22,10 +22,10 @@ jobs:
           fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
 
       - name: Setup .NET Core
+        # With no version input the action falls back to the global.json in the repository
+        # root, so the SDK version has exactly one home and Dependabot keeps it current.
         uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '9.0.x'
-      
+
       - name: Display dotnet version
         run: dotnet --version
 
