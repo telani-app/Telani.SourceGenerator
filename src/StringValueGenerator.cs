@@ -24,10 +24,15 @@ public class StringValueGenerator : IIncrementalGenerator
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // Everything the generator needs is extracted inside the transform, so the pipeline carries
+        // only the equatable EnumEntry model. Handing a SyntaxNode or a SemanticModel to a later
+        // Select would defeat caching (both compare by reference, so every keystroke looks like a
+        // change) and would keep the previous Compilation alive through the driver's state table.
         var enums = context.SyntaxProvider.ForAttributeWithMetadataName("Telani.SourceGenerator.StringValueGeneratorAttribute",
             predicate: static (node, _) => IsSyntaxTargetForGenerationQuick(node),
-            transform: static (syntaxContext, _) => ((EnumDeclarationSyntax)syntaxContext.TargetNode, syntaxContext.SemanticModel))
-            .Select(static (a, _) => PrepareEnum(a.Item1, a.SemanticModel));
+            transform: static (syntaxContext, _) => PrepareEnum(
+                (EnumDeclarationSyntax)syntaxContext.TargetNode,
+                syntaxContext.TargetSymbol.ContainingNamespace?.ToDisplayString() ?? ""));
 
         context.RegisterSourceOutput(enums.Collect(), Execute);
 
@@ -115,10 +120,9 @@ public class StringValueGenerator : IIncrementalGenerator
         return extension;
     }
 
-    private static EnumEntry PrepareEnum(EnumDeclarationSyntax i, SemanticModel semModel)
+    private static EnumEntry PrepareEnum(EnumDeclarationSyntax i, string enumNamespace)
     {
         var enumName = i.Identifier.ValueText;
-        var enumNamespace = semModel.GetDeclaredSymbol(i)?.ContainingNamespace?.ToDisplayString() ?? "";
 
         var values = ImmutableArray.CreateBuilder<EnumValueEntry>();
 
