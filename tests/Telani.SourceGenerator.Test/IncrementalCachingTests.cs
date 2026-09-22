@@ -1,6 +1,6 @@
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 
-namespace Telani.SourceGenerator.Tests;
+namespace Telani.SourceGenerator.Test;
 
 /// <summary>
 /// An incremental generator must not re-run its transform when something unrelated changes, and it
@@ -8,7 +8,8 @@ namespace Telani.SourceGenerator.Tests;
 /// node table sees a change on every keystroke and the driver's state table roots the previous
 /// Compilation in memory.
 /// </summary>
-public class IncrementalCachingTests
+[TestClass]
+public sealed class IncrementalCachingTests
 {
     /// <summary>One compilation that exercises all four generators at once.</summary>
     private const string AllFeatures = """
@@ -42,11 +43,11 @@ public class IncrementalCachingTests
         }
         """;
 
-    [Theory]
-    [InlineData(GeneratorTest.StringValueGenerator)]
-    [InlineData(GeneratorTest.MiniAPIRouter)]
-    [InlineData(GeneratorTest.ConfigGenerator)]
-    [InlineData(GeneratorTest.DateSourceGenerator)]
+    [TestMethod]
+    [DataRow(GeneratorTest.StringValueGenerator)]
+    [DataRow(GeneratorTest.MiniAPIRouter)]
+    [DataRow(GeneratorTest.ConfigGenerator)]
+    [DataRow(GeneratorTest.DateSourceGenerator)]
     public void An_unrelated_edit_does_not_re_run_the_transform(string generator)
     {
         var steps = GeneratorTest.RunTwiceWithUnrelatedEdit(AllFeatures, generator);
@@ -59,18 +60,21 @@ public class IncrementalCachingTests
         Assert.DoesNotContain(IncrementalStepRunReason.Modified, reasons);
     }
 
-    [Theory]
-    [InlineData(GeneratorTest.StringValueGenerator)]
-    [InlineData(GeneratorTest.MiniAPIRouter)]
-    [InlineData(GeneratorTest.ConfigGenerator)]
-    [InlineData(GeneratorTest.DateSourceGenerator)]
+    [TestMethod]
+    [DataRow(GeneratorTest.StringValueGenerator)]
+    [DataRow(GeneratorTest.MiniAPIRouter)]
+    [DataRow(GeneratorTest.ConfigGenerator)]
+    [DataRow(GeneratorTest.DateSourceGenerator)]
     public void An_unrelated_edit_does_not_regenerate_the_output(string generator)
     {
         var steps = GeneratorTest.RunTwiceWithUnrelatedEdit(AllFeatures, generator);
 
         foreach (var (name, reasons) in steps.Where(s => s.Key.EndsWith("SourceOutput", StringComparison.Ordinal)))
         {
-            Assert.All(reasons, r => Assert.Equal(IncrementalStepRunReason.Cached, r));
+            foreach (var reason in reasons)
+            {
+                Assert.AreEqual(IncrementalStepRunReason.Cached, reason, $"step '{name}' re-ran");
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿<Solution>
   <Project Path="DemoApp/DemoApp.csproj" />
   <Project Path="src/Telani.SourceGenerator.csproj" />
-  <Project Path="tests/Telani.SourceGenerator.Tests/Telani.SourceGenerator.Tests.csproj" />
+  <Project Path="tests/Telani.SourceGenerator.Test/Telani.SourceGenerator.Test.csproj" />
 </Solution>

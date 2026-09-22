@@ -1,9 +1,9 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Telani.SourceGenerator.Tests;
+namespace Telani.SourceGenerator.Test;
 
 /// <summary>
 /// The result of driving one or more generators over a compilation.
@@ -25,7 +25,7 @@ internal sealed class GeneratorRun
     public string Source(string hintName)
     {
         var match = Sources.SingleOrDefault(s => s.HintName == hintName);
-        Assert.False(match.SourceText is null,
+        Assert.IsNotNull(match.SourceText,
             $"No generated source named '{hintName}'. Generated: {string.Join(", ", Sources.Select(s => s.HintName))}");
         return match.SourceText.ToString();
     }
@@ -38,8 +38,8 @@ internal sealed class GeneratorRun
     /// <summary>Fails with the full generated source and error list attached, which makes a broken test readable.</summary>
     public void AssertCompiles()
     {
-        Assert.Null(Exception);
-        Assert.True(CompileErrors.IsEmpty,
+        Assert.IsNull(Exception);
+        Assert.IsTrue(CompileErrors.IsEmpty,
             "Expected the generated code to compile, but got:\n  "
             + string.Join("\n  ", CompileErrors.Select(e => e.ToString()))
             + "\n\n--- generated ---\n" + AllSources);
