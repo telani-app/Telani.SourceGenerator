@@ -1,13 +1,14 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Reflection;
 
-namespace Telani.SourceGenerator.Tests;
+namespace Telani.SourceGenerator.Test;
 
 /// <summary>
 /// EquatableArray&lt;T&gt; is internal, so these go through reflection rather than adding an
 /// InternalsVisibleTo to the shipped analyzer assembly.
 /// </summary>
-public class EquatableArrayTests
+[TestClass]
+public sealed class EquatableArrayTests
 {
     private static readonly Type OpenType =
         typeof(StringValueGenerator).Assembly.GetType("Telani.SourceGenerator.EquatableArray`1", throwOnError: true)!;
@@ -28,27 +29,27 @@ public class EquatableArrayTests
     private static int HashOf(object value)
         => (int)OpenType.MakeGenericType(typeof(string)).GetMethod(nameof(GetHashCode), Type.EmptyTypes)!.Invoke(value, null)!;
 
-    [Fact]
+    [TestMethod]
     public void Equal_contents_compare_equal()
-        => Assert.True(TypedEquals(Create("a", "b"), Create("a", "b")));
+        => Assert.IsTrue(TypedEquals(Create("a", "b"), Create("a", "b")));
 
-    [Fact]
+    [TestMethod]
     public void Different_contents_compare_unequal()
-        => Assert.False(TypedEquals(Create("a", "b"), Create("a", "c")));
+        => Assert.IsFalse(TypedEquals(Create("a", "b"), Create("a", "c")));
 
-    [Fact]
+    [TestMethod]
     public void Order_is_significant()
-        => Assert.False(TypedEquals(Create("a", "b"), Create("b", "a")));
+        => Assert.IsFalse(TypedEquals(Create("a", "b"), Create("b", "a")));
 
-    [Fact]
+    [TestMethod]
     public void Equal_contents_hash_equally()
-        => Assert.Equal(HashOf(Create("a", "b")), HashOf(Create("a", "b")));
+        => Assert.AreEqual(HashOf(Create("a", "b")), HashOf(Create("a", "b")));
 
-    [Fact]
+    [TestMethod]
     public void An_empty_array_is_equal_to_another_empty_array()
-        => Assert.True(TypedEquals(Create(), Create()));
+        => Assert.IsTrue(TypedEquals(Create(), Create()));
 
-    [Fact]
+    [TestMethod]
     public void The_default_comparer_uses_the_typed_path()
     {
         // This is the path Roslyn's node tables take, and the reason finding 5 has not bitten yet.
@@ -59,17 +60,18 @@ public class EquatableArrayTests
 
         var equals = comparer.GetType().GetMethod("Equals", [closed, closed])!;
 
-        Assert.True((bool)equals.Invoke(comparer, [Create("a", "b"), Create("a", "b")])!);
+        Assert.IsTrue((bool)equals.Invoke(comparer, [Create("a", "b"), Create("a", "b")])!);
     }
 
     // --- known bugs --------------------------------------------------------------------------
 
-    [Fact(Skip = "Audit finding 5: Equals(object) is 'obj is EquatableArray<T> array && Equals(this, array)'. Two arguments bind to the inherited STATIC object.Equals(object, object), which calls straight back into this override. WARNING: un-skipping this before the fix crashes the test runner with an uncatchable StackOverflowException - it cannot be caught or timed out. The fix is to call Equals(array).")]
+    [TestMethod]
+    [Ignore("Audit finding 5: Equals(object) is 'obj is EquatableArray<T> array && Equals(this, array)'. Two arguments bind to the inherited STATIC object.Equals(object, object), which calls straight back into this override. WARNING: un-skipping this before the fix crashes the test runner with an uncatchable StackOverflowException - it cannot be caught or timed out. The fix is to call Equals(array).")]
     public void Equals_object_does_not_recurse()
     {
         var closed = OpenType.MakeGenericType(typeof(string));
         var equalsObject = closed.GetMethod("Equals", [typeof(object)])!;
 
-        Assert.True((bool)equalsObject.Invoke(Create("a", "b"), [Create("a", "b")])!);
+        Assert.IsTrue((bool)equalsObject.Invoke(Create("a", "b"), [Create("a", "b")])!);
     }
 }

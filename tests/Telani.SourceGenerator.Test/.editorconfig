@@ -1,0 +1,4 @@
+[*.cs]
+# Test methods follow the Method_Scenario_ExpectedResult naming convention, so the
+# underscores are intentional and CA1707 does not apply to this project.
+dotnet_diagnostic.CA1707.severity = none

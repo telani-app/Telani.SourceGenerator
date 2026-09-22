@@ -1,6 +1,7 @@
-﻿namespace Telani.SourceGenerator.Tests;
+﻿namespace Telani.SourceGenerator.Test;
 
-public class MiniAPIRouterTests
+[TestClass]
+public sealed class MiniAPIRouterTests
 {
     private const string Gen = GeneratorTest.MiniAPIRouter;
 
@@ -22,7 +23,7 @@ public class MiniAPIRouterTests
 
     private static GeneratorRun RunWithBase(string routes) => GeneratorTest.Run([RouteBaseClass, routes], [Gen]);
 
-    [Fact]
+    [TestMethod]
     public void Generates_Path_Method_and_RequestRegex_that_compile()
     {
         var run = RunWithBase("""
@@ -41,14 +42,14 @@ public class MiniAPIRouterTests
         Assert.Contains("(?<id>[^/]+)", source);
     }
 
-    [Theory]
-    [InlineData("GET", "Get")]
-    [InlineData("POST", "Post")]
-    [InlineData("PUT", "Put")]
-    [InlineData("DELETE", "Delete")]
-    [InlineData("HEAD", "Head")]
-    [InlineData("OPTIONS", "Options")]
-    [InlineData("TRACE", "Trace")]
+    [TestMethod]
+    [DataRow("GET", "Get")]
+    [DataRow("POST", "Post")]
+    [DataRow("PUT", "Put")]
+    [DataRow("DELETE", "Delete")]
+    [DataRow("HEAD", "Head")]
+    [DataRow("OPTIONS", "Options")]
+    [DataRow("TRACE", "Trace")]
     public void Maps_every_supported_verb(string verb, string expected)
     {
         var run = RunWithBase($$"""
@@ -63,7 +64,7 @@ public class MiniAPIRouterTests
         Assert.Contains($"HttpMethod.{expected};", run.Source("RouteExtensions.g.cs"));
     }
 
-    [Fact]
+    [TestMethod]
     public void Turns_each_placeholder_into_a_named_capture_group()
     {
         var run = RunWithBase("""
@@ -81,7 +82,7 @@ public class MiniAPIRouterTests
         Assert.Contains("(?<id>[^/]+)", source);
     }
 
-    [Fact]
+    [TestMethod]
     public void Routes_in_different_namespaces_compile()
     {
         var run = RunWithBase("""
@@ -100,7 +101,7 @@ public class MiniAPIRouterTests
         run.AssertCompiles();
     }
 
-    [Fact]
+    [TestMethod]
     public void A_route_without_placeholders_anchors_the_pattern()
     {
         var run = RunWithBase("""
@@ -117,11 +118,12 @@ public class MiniAPIRouterTests
 
     // --- known bugs --------------------------------------------------------------------------
 
-    [Theory(Skip = "Audit finding 2: ParseMethod throws ArgumentException for anything it does not recognise. Because Execute runs over Collect(), that exception takes down RouteExtensions.g.cs for EVERY route in the compilation, not just the offending one. It should report a diagnostic instead.")]
-    [InlineData("get")]
-    [InlineData("Get")]
-    [InlineData("PATCH")]
-    [InlineData("")]
+    [TestMethod]
+    [Ignore("Audit finding 2: ParseMethod throws ArgumentException for anything it does not recognise. Because Execute runs over Collect(), that exception takes down RouteExtensions.g.cs for EVERY route in the compilation, not just the offending one. It should report a diagnostic instead.")]
+    [DataRow("get")]
+    [DataRow("Get")]
+    [DataRow("PATCH")]
+    [DataRow("")]
     public void An_unrecognised_verb_reports_a_diagnostic_instead_of_throwing(string verb)
     {
         var run = RunWithBase($$"""
@@ -132,11 +134,12 @@ public class MiniAPIRouterTests
             }
             """);
 
-        Assert.Null(run.Exception);
-        Assert.NotEmpty(run.GeneratorDiagnostics);
+        Assert.IsNull(run.Exception);
+        Assert.IsNotEmpty(run.GeneratorDiagnostics);
     }
 
-    [Fact(Skip = "Audit finding 2: one bad route silently removes the generated members from all the others. This is the blast-radius half of the same bug.")]
+    [TestMethod]
+    [Ignore("Audit finding 2: one bad route silently removes the generated members from all the others. This is the blast-radius half of the same bug.")]
     public void A_bad_route_does_not_break_the_other_routes()
     {
         var run = RunWithBase("""
@@ -153,7 +156,8 @@ public class MiniAPIRouterTests
         Assert.Contains("\"/good\"", run.Source("RouteExtensions.g.cs"));
     }
 
-    [Fact(Skip = "Audit finding 2: arguments are read positionally with First()/Last(), so named arguments in the other order make the route string be parsed as the verb, which then throws.")]
+    [TestMethod]
+    [Ignore("Audit finding 2: arguments are read positionally with First()/Last(), so named arguments in the other order make the route string be parsed as the verb, which then throws.")]
     public void Named_arguments_are_resolved_by_parameter_name()
     {
         var run = RunWithBase("""
@@ -168,7 +172,8 @@ public class MiniAPIRouterTests
         Assert.Contains("HttpMethod.Post;", run.Source("RouteExtensions.g.cs"));
     }
 
-    [Fact(Skip = "Audit finding 13: the route is inserted into the regex without Regex.Escape, so '.' stays a wildcard and '/file.json' also matches '/fileXjson'.")]
+    [TestMethod]
+    [Ignore("Audit finding 13: the route is inserted into the regex without Regex.Escape, so '.' stays a wildcard and '/file.json' also matches '/fileXjson'.")]
     public void Regex_metacharacters_in_a_route_are_escaped()
     {
         var run = RunWithBase("""
@@ -183,7 +188,8 @@ public class MiniAPIRouterTests
         Assert.Contains(@"/file\.json", run.Source("RouteExtensions.g.cs"));
     }
 
-    [Fact(Skip = "Audit finding 14: the generated regex is written as an interpolated string for no reason, so any brace the placeholder regex did not consume becomes a C# interpolation hole. '{id:int}' produces CS0103.")]
+    [TestMethod]
+    [Ignore("Audit finding 14: the generated regex is written as an interpolated string for no reason, so any brace the placeholder regex did not consume becomes a C# interpolation hole. '{id:int}' produces CS0103.")]
     public void A_placeholder_with_a_constraint_compiles()
     {
         var run = RunWithBase("""
@@ -197,7 +203,8 @@ public class MiniAPIRouterTests
         run.AssertCompiles();
     }
 
-    [Fact(Skip = "Audit finding 15: Token.Text is the raw source text including the @ and the quotes, so a verbatim route literal is spliced into the generated file and produces a cascade of syntax errors. Token.ValueText is what is wanted.")]
+    [TestMethod]
+    [Ignore("Audit finding 15: Token.Text is the raw source text including the @ and the quotes, so a verbatim route literal is spliced into the generated file and produces a cascade of syntax errors. Token.ValueText is what is wanted.")]
     public void A_verbatim_route_literal_compiles()
     {
         var run = RunWithBase("""
@@ -211,7 +218,8 @@ public class MiniAPIRouterTests
         run.AssertCompiles();
     }
 
-    [Fact(Skip = "Audit finding 15: a const reference is not a LiteralExpressionSyntax, so the route comes out empty and emits 'public override string Path => ;'.")]
+    [TestMethod]
+    [Ignore("Audit finding 15: a const reference is not a LiteralExpressionSyntax, so the route comes out empty and emits 'public override string Path => ;'.")]
     public void A_const_route_argument_is_resolved()
     {
         var run = RunWithBase("""
@@ -228,7 +236,8 @@ public class MiniAPIRouterTests
         Assert.Contains("\"/api/items\"", run.Source("RouteExtensions.g.cs"));
     }
 
-    [Fact(Skip = "Audit finding 16: GetDeclaredSymbol(i).ContainingNamespace.ToDisplayString() returns the literal '<global namespace>', which is emitted verbatim as a namespace declaration.")]
+    [TestMethod]
+    [Ignore("Audit finding 16: GetDeclaredSymbol(i).ContainingNamespace.ToDisplayString() returns the literal '<global namespace>', which is emitted verbatim as a namespace declaration.")]
     public void A_route_in_the_global_namespace_compiles()
     {
         var run = GeneratorTest.Run(
@@ -253,7 +262,8 @@ public class MiniAPIRouterTests
         run.AssertCompiles();
     }
 
-    [Fact(Skip = "Audit finding 21: RequestRegex is an expression-bodied property, so every read constructs and parses a new Regex. It should cache in a static field, or use [GeneratedRegex].")]
+    [TestMethod]
+    [Ignore("Audit finding 21: RequestRegex is an expression-bodied property, so every read constructs and parses a new Regex. It should cache in a static field, or use [GeneratedRegex].")]
     public void RequestRegex_does_not_allocate_on_every_read()
     {
         var run = RunWithBase("""

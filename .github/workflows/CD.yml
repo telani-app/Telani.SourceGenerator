@@ -35,8 +35,11 @@ jobs:
       - name: Build
         run: dotnet build
 
+      # --report-gh turns on Microsoft.Testing.Extensions.GitHubActionsReport, which the test
+      # project references: collapsible per-assembly log groups, an ::error annotation per
+      # failing test and a job summary on the run page. It only does anything inside Actions.
       - name: Run tests
-        run: dotnet test
+        run: dotnet test --report-gh
 
   publish:
     name: Pack and publish

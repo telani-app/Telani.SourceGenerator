@@ -1,6 +1,7 @@
-﻿namespace Telani.SourceGenerator.Tests;
+﻿namespace Telani.SourceGenerator.Test;
 
-public class StringValueGeneratorTests
+[TestClass]
+public sealed class StringValueGeneratorTests
 {
     private const string Gen = GeneratorTest.StringValueGenerator;
 
@@ -15,7 +16,7 @@ public class StringValueGeneratorTests
         }
         """;
 
-    [Fact]
+    [TestMethod]
     public void Generates_a_GetStringValue_extension_that_compiles()
     {
         var run = GeneratorTest.Run(TwoMemberEnum, Gen);
@@ -28,7 +29,7 @@ public class StringValueGeneratorTests
         Assert.Contains("Planet.Venus => \"Venus\",", source);
     }
 
-    [Fact]
+    [TestMethod]
     public void Generates_a_FromString_method_that_compiles()
     {
         var run = GeneratorTest.Run(TwoMemberEnum, Gen);
@@ -40,7 +41,7 @@ public class StringValueGeneratorTests
         Assert.Contains("\"Merkur\" => Planet.Mercury,", source);
     }
 
-    [Fact]
+    [TestMethod]
     public void Generates_an_EnumToString_dispatcher_per_namespace()
     {
         var run = GeneratorTest.Run("""
@@ -53,12 +54,12 @@ public class StringValueGeneratorTests
         run.AssertCompiles();
 
         var source = run.Source("EnumToString.g.cs");
-        Assert.Equal(1, CountOccurrences(source, "namespace Demo"));
+        Assert.AreEqual(1, CountOccurrences(source, "namespace Demo"));
         Assert.Contains("First First => First.GetStringValue(),", source);
         Assert.Contains("Second Second => Second.GetStringValue(),", source);
     }
 
-    [Fact]
+    [TestMethod]
     public void Two_enums_in_the_same_namespace_compile()
     {
         var run = GeneratorTest.Run("""
@@ -73,7 +74,7 @@ public class StringValueGeneratorTests
 
     // --- determinism (audit finding 6) -------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Switch_arms_follow_declaration_order()
     {
         // Regression test. The members used to live in an ImmutableDictionary, whose enumeration
@@ -98,10 +99,10 @@ public class StringValueGeneratorTests
             .Select(l => l["Big.".Length..].Split(' ')[0])
             .ToArray();
 
-        Assert.Equal(Enumerable.Range(0, 12).Select(i => $"M{i}"), order);
+        Assert.AreSequenceEqual(Enumerable.Range(0, 12).Select(i => $"M{i}").ToArray(), order);
     }
 
-    [Fact]
+    [TestMethod]
     public void FromString_falls_back_to_the_first_declared_member()
     {
         var run = GeneratorTest.Run("""
@@ -120,7 +121,7 @@ public class StringValueGeneratorTests
         Assert.Contains("_ => Planet.Mercury", run.Source("EnumExtensions.g.cs"));
     }
 
-    [Fact]
+    [TestMethod]
     public void Generated_source_is_identical_for_identical_input()
     {
         // Within one process this cannot catch the hash-order problem that finding 6 describes,
@@ -129,12 +130,13 @@ public class StringValueGeneratorTests
         var first = GeneratorTest.Run(TwoMemberEnum, Gen).AllSources;
         var second = GeneratorTest.Run(TwoMemberEnum, Gen).AllSources;
 
-        Assert.Equal(first, second);
+        Assert.AreEqual(first, second);
     }
 
     // --- known bugs --------------------------------------------------------------------------
 
-    [Fact(Skip = "Audit finding 3: e.Values.First() throws InvalidOperationException on an enum with no members, which Roslyn surfaces as CS8785 and which takes down the generator for every other enum in the compilation.")]
+    [TestMethod]
+    [Ignore("Audit finding 3: e.Values.First() throws InvalidOperationException on an enum with no members, which Roslyn surfaces as CS8785 and which takes down the generator for every other enum in the compilation.")]
     public void An_empty_enum_does_not_crash_the_generator()
     {
         var run = GeneratorTest.Run("""
@@ -144,10 +146,11 @@ public class StringValueGeneratorTests
             public enum Empty { }
             """, Gen);
 
-        Assert.Null(run.Exception);
+        Assert.IsNull(run.Exception);
     }
 
-    [Fact(Skip = "Audit finding 4: PrepareEnum matches the attribute with (att.Name as SimpleNameSyntax) and compares against the literal 'StringValue', so a fully qualified usage is silently skipped and the arm is emitted as 'Planet.Mercury => ,'.")]
+    [TestMethod]
+    [Ignore("Audit finding 4: PrepareEnum matches the attribute with (att.Name as SimpleNameSyntax) and compares against the literal 'StringValue', so a fully qualified usage is silently skipped and the arm is emitted as 'Planet.Mercury => ,'.")]
     public void A_fully_qualified_StringValue_attribute_is_recognised()
     {
         var run = GeneratorTest.Run("""
@@ -164,7 +167,8 @@ public class StringValueGeneratorTests
         Assert.Contains("Planet.Mercury => \"Merkur\",", run.Source("EnumExtensions.g.cs"));
     }
 
-    [Fact(Skip = "Audit finding 4: the same name check rejects the long form [StringValueAttribute(...)], which C# treats as identical to [StringValue(...)].")]
+    [TestMethod]
+    [Ignore("Audit finding 4: the same name check rejects the long form [StringValueAttribute(...)], which C# treats as identical to [StringValue(...)].")]
     public void The_long_form_StringValueAttribute_is_recognised()
     {
         var run = GeneratorTest.Run("""
@@ -181,7 +185,8 @@ public class StringValueGeneratorTests
         Assert.Contains("Planet.Mercury => \"Merkur\",", run.Source("EnumExtensions.g.cs"));
     }
 
-    [Fact(Skip = "Audit finding 4: a member without [StringValue] emits 'Planet.Venus => ,' instead of a value or a diagnostic. The generator should report a diagnostic naming the member.")]
+    [TestMethod]
+    [Ignore("Audit finding 4: a member without [StringValue] emits 'Planet.Venus => ,' instead of a value or a diagnostic. The generator should report a diagnostic naming the member.")]
     public void A_member_without_a_StringValue_reports_a_diagnostic()
     {
         var run = GeneratorTest.Run("""
@@ -195,11 +200,12 @@ public class StringValueGeneratorTests
             }
             """, Gen);
 
-        Assert.NotEmpty(run.GeneratorDiagnostics);
-        Assert.True(run.CompileErrors.IsEmpty, "The generated code must stay compilable even when a member is unannotated.");
+        Assert.IsNotEmpty(run.GeneratorDiagnostics);
+        Assert.IsTrue(run.CompileErrors.IsEmpty, "The generated code must stay compilable even when a member is unannotated.");
     }
 
-    [Fact(Skip = "Audit finding 4: the argument is read as a LiteralExpressionSyntax, so a const reference yields an empty string and an uncompilable arm.")]
+    [TestMethod]
+    [Ignore("Audit finding 4: the argument is read as a LiteralExpressionSyntax, so a const reference yields an empty string and an uncompilable arm.")]
     public void A_const_string_argument_is_resolved()
     {
         var run = GeneratorTest.Run("""
@@ -218,7 +224,8 @@ public class StringValueGeneratorTests
         Assert.Contains("Planet.Mercury => \"Merkur\",", run.Source("EnumExtensions.g.cs"));
     }
 
-    [Fact(Skip = "Audit finding 17: only the enum's own identifier is used, so a nested enum is emitted as 'this Inner @this' at namespace scope and does not resolve (CS0246).")]
+    [TestMethod]
+    [Ignore("Audit finding 17: only the enum's own identifier is used, so a nested enum is emitted as 'this Inner @this' at namespace scope and does not resolve (CS0246).")]
     public void A_nested_enum_is_qualified_with_its_containing_type()
     {
         var run = GeneratorTest.Run("""
@@ -234,7 +241,8 @@ public class StringValueGeneratorTests
         run.AssertCompiles();
     }
 
-    [Fact(Skip = "Audit finding 16: ContainingNamespace.ToDisplayString() returns the literal '<global namespace>' for a top-level enum, which is emitted verbatim as 'namespace <global namespace>'.")]
+    [TestMethod]
+    [Ignore("Audit finding 16: ContainingNamespace.ToDisplayString() returns the literal '<global namespace>' for a top-level enum, which is emitted verbatim as 'namespace <global namespace>'.")]
     public void An_enum_in_the_global_namespace_compiles()
     {
         var run = GeneratorTest.Run("""
@@ -245,7 +253,8 @@ public class StringValueGeneratorTests
         run.AssertCompiles();
     }
 
-    [Fact(Skip = "Audit finding 4 follow-on: two members sharing a string value produce duplicate case labels in XFromString (CS8510). The generator should report a diagnostic instead.")]
+    [TestMethod]
+    [Ignore("Audit finding 4 follow-on: two members sharing a string value produce duplicate case labels in XFromString (CS8510). The generator should report a diagnostic instead.")]
     public void Duplicate_string_values_report_a_diagnostic()
     {
         var run = GeneratorTest.Run("""
@@ -259,7 +268,7 @@ public class StringValueGeneratorTests
             }
             """, Gen);
 
-        Assert.NotEmpty(run.GeneratorDiagnostics);
+        Assert.IsNotEmpty(run.GeneratorDiagnostics);
         run.AssertCompiles();
     }
 

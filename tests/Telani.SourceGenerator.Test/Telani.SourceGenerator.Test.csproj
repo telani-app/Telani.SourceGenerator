@@ -1,16 +1,27 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="MSTest.Sdk/4.4.1">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <WarningsAsErrors>Nullable</WarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <MSTestAnalysisMode>All</MSTestAnalysisMode>
     <IsPackable>false</IsPackable>
+
+    <!-- Emit GitHub Actions workflow commands (collapsible per-assembly log groups, failure and
+         skip annotations, and a job summary) when CI passes the report-gh switch. Off outside Actions.
+         MSTest.Sdk only auto-enables this under TestingExtensionsProfile=AllMicrosoft, which would
+         pull in extensions we do not want, so it is opted into per project; the SDK supplies the
+         package version, including under central package management. -->
+    <EnableMicrosoftTestingExtensionsGitHubActionsReport>true</EnableMicrosoftTestingExtensionsGitHubActionsReport>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Drives the generators directly, the same way the compiler does. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <!-- Reference assemblies for the compilations the generators run against, so the tests do not
@@ -28,9 +39,4 @@
     <!-- A plain library reference, not an Analyzer: the tests construct the generators themselves. -->
     <ProjectReference Include="..\..\src\Telani.SourceGenerator.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
-
 </Project>
