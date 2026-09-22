@@ -67,7 +67,7 @@
          which packs it into analyzers/dotnet/cs. -->
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" ExcludeAssets="runtime" />
-	<PackageReference Include="Nerdbank.GitVersioning" Version="3.8.118" PrivateAssets="all" />
+	<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94" PrivateAssets="all" />
 	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
   </ItemGroup>
 </Project>
