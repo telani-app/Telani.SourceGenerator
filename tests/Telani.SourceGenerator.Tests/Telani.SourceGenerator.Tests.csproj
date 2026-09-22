@@ -15,7 +15,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <!-- Reference assemblies for the compilations the generators run against, so the tests do not
          depend on whatever targeting packs happen to be installed on the machine. -->
-    <PackageReference Include="Basic.Reference.Assemblies.Net80" Version="1.7.9" />
+    <PackageReference Include="Basic.Reference.Assemblies.Net80" Version="1.8.12" />
     <!-- The generator is compiled against this for System.HashCode, which netstandard2.0 lacks. It
          is PrivateAssets="all" there, so a ProjectReference does not bring it along; the package
          instead ships it next to the generator in analyzers/dotnet/cs. Reference it here so the
