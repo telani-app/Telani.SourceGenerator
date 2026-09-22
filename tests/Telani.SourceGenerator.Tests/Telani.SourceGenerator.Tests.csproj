@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <!-- Drives the generators directly, the same way the compiler does. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <!-- Reference assemblies for the compilations the generators run against, so the tests do not
+         depend on whatever targeting packs happen to be installed on the machine. -->
+    <PackageReference Include="Basic.Reference.Assemblies.Net80" Version="1.7.9" />
+    <!-- The generator is compiled against this for System.HashCode, which netstandard2.0 lacks. It
+         is PrivateAssets="all" there, so a ProjectReference does not bring it along; the package
+         instead ships it next to the generator in analyzers/dotnet/cs. Reference it here so the
+         tests load the generator the same way Roslyn does, or EquatableArray.GetHashCode throws
+         FileNotFoundException at run time. -->
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- A plain library reference, not an Analyzer: the tests construct the generators themselves. -->
+    <ProjectReference Include="..\..\src\Telani.SourceGenerator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
