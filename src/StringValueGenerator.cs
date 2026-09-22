@@ -46,34 +46,20 @@ public class StringValueGenerator : IIncrementalGenerator
         });
     }
 
-    private readonly record struct EnumEntry(string Name, ImmutableDictionary<string, string> Values, string EnumNamespace)
-    {
-        public readonly bool Equals(EnumEntry other)
-        {
-            if (Name != other.Name)
-            {
-                return false;
-            }
-            if (EnumNamespace != other.EnumNamespace)
-            {
-                return false;
-            }
-            if (Values.Count != other.Values.Count)
-            {
-                return false;
-            }
-            foreach (var item in Values)
-            {
-                if (!other.Values.TryGetValue(item.Key, out var value) || value != item.Value)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+    /// <summary>
+    /// One enum member and the string it maps to, as written in the source.
+    /// </summary>
+    private readonly record struct EnumValueEntry(string MemberName, string StringValue);
 
-        public override readonly int GetHashCode() => HashCode.Combine(Name, Values, EnumNamespace);
-    };
+    /// <summary>
+    /// The members are kept in declaration order in an <see cref="EquatableArray{T}"/>. An
+    /// ImmutableDictionary would be wrong here twice over: its enumeration order follows the
+    /// randomized string hash codes, so every compiler process would emit the switch arms in a
+    /// different order and pick a different fallback member, and it compares by reference, which
+    /// is why this type needed a hand-written Equals. Declaration order makes the generated source
+    /// reproducible and lets the record struct synthesize a correct Equals/GetHashCode pair.
+    /// </summary>
+    private readonly record struct EnumEntry(string Name, EquatableArray<EnumValueEntry> Values, string EnumNamespace);
 
     private static void Execute(SourceProductionContext productionContext, ImmutableArray<EnumEntry> inputs)
     {
@@ -107,7 +93,7 @@ public class StringValueGenerator : IIncrementalGenerator
             extension.WriteStartBlock();
             foreach (var att in e.Values)
             {
-                extension.WriteLine($"{e.Name}.{att.Key} => {att.Value},");
+                extension.WriteLine($"{e.Name}.{att.MemberName} => {att.StringValue},");
             }
             extension.WriteLine($"_ => \"\"");
             extension.WriteEndBlock(addSemicolon: true);
@@ -119,9 +105,12 @@ public class StringValueGenerator : IIncrementalGenerator
             extension.WriteStartBlock();
             foreach (var att in e.Values)
             {
-                extension.WriteLine($"{att.Value} => {e.Name}.{att.Key},");
+                extension.WriteLine($"{att.StringValue} => {e.Name}.{att.MemberName},");
             }
-            extension.WriteLine($"_ => {e.Name}.{e.Values.First().Key}");
+            // An unrecognised string falls back to the first declared member. Any member has to be
+            // picked, and the first declared one is the only choice that does not depend on the
+            // order the members happen to be stored in.
+            extension.WriteLine($"_ => {e.Name}.{e.Values.First().MemberName}");
             extension.WriteEndBlock(addSemicolon: true);
 
             extension.WriteEndBlock(); // class end
@@ -135,7 +124,7 @@ public class StringValueGenerator : IIncrementalGenerator
     {
         var enumName = i.Identifier.ValueText;
 
-        var values = new Dictionary<string, string>();
+        var values = ImmutableArray.CreateBuilder<EnumValueEntry>();
 
         foreach (var item in i.Members)
         {
@@ -156,9 +145,9 @@ public class StringValueGenerator : IIncrementalGenerator
                     }
                 }
             }
-            values.Add(enumValue, enumStringValue);
+            values.Add(new EnumValueEntry(enumValue, enumStringValue));
         }
-        return new EnumEntry(enumName, values.ToImmutableDictionary(), enumNamespace);
+        return new EnumEntry(enumName, new EquatableArray<EnumValueEntry>(values.ToImmutable()), enumNamespace);
     }
 
     private static SourceWriter EnumToString(IEnumerable<EnumEntry> enums)
