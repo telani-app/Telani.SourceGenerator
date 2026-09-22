@@ -16,3 +16,10 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+
+  # Keeps the SDK version in global.json current. CD.yml feeds that same file to
+  # setup-dotnet, so a merged bump here is what moves the version CI builds with.
+  - package-ecosystem: "dotnet-sdk"
+    directory: "/"
+    schedule:
+      interval: "daily"
