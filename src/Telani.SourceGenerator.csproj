@@ -9,6 +9,9 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- Analyzer package: ships only analyzers/, never runtime assets. Marks the package so
+         consumers get PrivateAssets="all" implicitly and no future dependency can leak. -->
+    <DevelopmentDependency>true</DevelopmentDependency>
 	<IsRoslynComponent>true</IsRoslynComponent>
   </PropertyGroup>
 
@@ -35,11 +38,20 @@
 
 	<!--
       https://github.com/dotnet/roslyn/issues/52017#issuecomment-1046216200
-      This automatically adds explicit and transient dependencies so that they are available at the time the generator is executed. 
+      Ship the generator's own dependencies next to it in analyzers/dotnet/cs: Roslyn loads an
+      analyzer from that folder and probes the same folder for what it needs. It does NOT resolve
+      the package's nuspec dependencies, which is why a <dependency> entry cannot do this job.
+
+      Pack RuntimeCopyLocalItems, not ResolvedCompileFileDefinitions. The latter also contains
+      Roslyn itself and its whole closure (Microsoft.CodeAnalysis.*, System.Collections.Immutable,
+      System.Reflection.Metadata, ...), which the compiler host already provides; shipping those
+      risks binding against a different Roslyn than the host's. ExcludeAssets="runtime" on the
+      Microsoft.CodeAnalysis.CSharp reference below keeps that closure out of this item, so the
+      list stays correct on its own as dependencies change.
   -->
   <Target Name="AddGenerationTimeReferences" AfterTargets="ResolvePackageDependenciesForBuild">
     <ItemGroup>
-      <None Include="@(ResolvedCompileFileDefinitions)" Pack="true" PackagePath="analyzers/dotnet/cs" />
+      <None Include="@(RuntimeCopyLocalItems)" Pack="true" PackagePath="analyzers/dotnet/cs" />
     </ItemGroup>
   </Target>
 
@@ -48,8 +60,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
+    <!-- netstandard2.0 has no in-box System.HashCode, so the generator needs this at compile
+         time. PrivateAssets keeps it out of the nuspec dependencies: without it the package
+         flows into every consuming app's output, and a NativeAOT app cannot execute the IL.
+         The DLL still reaches the generator at run time via AddGenerationTimeReferences above,
+         which packs it into analyzers/dotnet/cs. -->
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" ExcludeAssets="runtime" />
 	<PackageReference Include="Nerdbank.GitVersioning" Version="3.8.118" PrivateAssets="all" />
 	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
