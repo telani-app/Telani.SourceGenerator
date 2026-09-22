@@ -26,6 +26,13 @@
 	<DebugType>Embedded</DebugType>
 	<EmbedUntrackedSources>true</EmbedUntrackedSources>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<!-- This package ships only analyzers/, never lib/, so a nuspec dependency group can do
+	     nothing useful: Roslyn loads the generator from analyzers/dotnet/cs and probes that
+	     folder, it does not resolve the package's declared dependencies. A declared dependency
+	     only lands in the consuming app's graph, where it gets copied into bin and shipped.
+	     Suppressing the group keeps that impossible, and removes the NU5128 the empty
+	     netstandard2.0 group otherwise raises against the missing lib/ folder. -->
+	<SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
 	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
