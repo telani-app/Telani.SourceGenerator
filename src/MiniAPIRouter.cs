@@ -16,10 +16,15 @@ public class MiniAPIRouter : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // Everything the generator needs is extracted inside the transform, so the pipeline carries
+        // only the equatable RouteEntry model. Handing a SyntaxNode or a SemanticModel to a later
+        // Select would defeat caching (both compare by reference, so every keystroke looks like a
+        // change) and would keep the previous Compilation alive through the driver's state table.
         var routes = context.SyntaxProvider.ForAttributeWithMetadataName("Telani.SourceGenerator.TelaniRouteAttribute",
                     predicate: static (node, _) => IsSyntaxTargetForGenerationQuick(node),
-                    transform: static (syntaxContext, _) => ((ClassDeclarationSyntax)syntaxContext.TargetNode, syntaxContext.SemanticModel))
-                    .Select(static (a, _) => PrepareRoute(a.Item1, a.SemanticModel));
+                    transform: static (syntaxContext, _) => PrepareRoute(
+                        (ClassDeclarationSyntax)syntaxContext.TargetNode,
+                        syntaxContext.TargetSymbol.ContainingNamespace?.ToDisplayString() ?? ""));
 
         context.RegisterSourceOutput(routes.Collect(), Execute);
 
@@ -32,7 +37,7 @@ public class MiniAPIRouter : IIncrementalGenerator
 
     private readonly record struct RouteEntry(string Name, string ClassNamespace, string RequestRoute, HttpMethod Method, string RequestRegex);
 
-    private static RouteEntry PrepareRoute(ClassDeclarationSyntax i, SemanticModel semModel)
+    private static RouteEntry PrepareRoute(ClassDeclarationSyntax i, string classNamespace)
     {
         /*if (!Debugger.IsAttached)
         {
@@ -40,7 +45,6 @@ public class MiniAPIRouter : IIncrementalGenerator
             Debugger.Break();
         }*/
         var className = i.Identifier.ValueText;
-        var classNamespace = semModel.GetDeclaredSymbol(i)?.ContainingNamespace?.ToDisplayString() ?? "";
         string requestRoute = string.Empty;
         string requestRegex = string.Empty;
         HttpMethod requestMethod = HttpMethod.Get;
